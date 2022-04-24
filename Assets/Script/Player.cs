@@ -8,15 +8,20 @@ public class Player : MonoBehaviour
     public HingeJoint2D hinge;
     float horizontal;
     public Collider2D Pcollider;
+    public Ghost ghost;
     public float speed = 3.0f;
     public float jumpForce = 120f;
     public float attachForce=15f;
     public bool attached = false;
     public bool crouch = false;
+    public Weapon weapon;
     public Transform attachedTo;
     private GameObject disregard;
+    
     Animator animator;
-    SpriteRenderer P_renderer;
+    public int WEAPONDAMAGE=0;
+    
+    public SpriteRenderer P_renderer;
     void OnEnable()
     {
 
@@ -36,8 +41,8 @@ public class Player : MonoBehaviour
         Pcollider=GetComponent<Collider2D>();
         animator = GetComponent<Animator>();
         P_renderer = GetComponent<SpriteRenderer>();
-        //animator.SetBool("Is_Jump",false);
-        //animator.SetBool("Is_Crouch",false);
+        WEAPONDAMAGE = weapon.damage;
+        
         }
     void Update(){
         if(!crouch){
@@ -45,46 +50,58 @@ public class Player : MonoBehaviour
         }
         
         animator.SetBool("Is_Idle",true);
-        //animator.SetBool("Is_Walk",false);
+        getInputs();
         
-        if(Input.GetKeyDown(KeyCode.LeftControl)){
-            
-            crouch = true;
-            animator.SetBool("Is_Crouch",true);
-        }
-        if(Input.GetKeyUp(KeyCode.LeftControl)){
-            crouch=false;
-            animator.SetBool("Is_Crouch",false);
-            
-        }
-        // if(Input.GetKeyDown(KeyCode.E)){
-        //     animator.SetBool("Is_Attack",true);
-        // }
-        // if(Input.GetKeyUp(KeyCode.E)){
-        //     animator.SetBool("Is_Attack",false);
-        // }
+        
         if(!attached){
             transform.position += new Vector3(horizontal, 0,0)*Time.deltaTime*speed;
         }
         
         if(horizontal!=0){
             
-            //animator.SetBool("Is_Walk",true);
-            
             if(horizontal>0){
                 if(attached){
                     body.AddRelativeForce(new Vector3(1,0,0) * attachForce);
                 }
                 P_renderer.flipX=false;
+                weapon.flipx=false;
+                ghost.FlipX(false);
             }
             else if(horizontal<0){
                 if(attached){
                     body.AddRelativeForce(new Vector3(-1,0,0) * attachForce);
                 }
+                weapon.flipx=true;
                 P_renderer.flipX=true;
+                ghost.FlipX(true);
             }
             animator.SetBool("Is_Idle",false);
             Animate();
+            
+        }
+        
+        if(Mathf.Abs(body.velocity.y)!=0f){
+            animator.SetBool("Is_Idle",false);
+            Animate();
+        }
+    }
+    void getInputs(){
+        if(Input.GetKey(KeyCode.LeftControl)){
+            
+            crouch = true;
+            animator.SetBool("Is_Crouch",true);
+        }
+        else{
+            crouch=false;
+            animator.SetBool("Is_Crouch",false);
+        }
+        if(Input.GetKey(KeyCode.E)){
+            animator.SetBool("Attack",true);
+            weapon.Animator.SetBool("Is_Strike",true);
+            Strike();
+        }else{
+            animator.SetBool("Attack",false); 
+            weapon.Animator.SetBool("Is_Strike",false);
             
         }
         if(Input.GetButtonDown("Jump")){
@@ -102,21 +119,14 @@ public class Player : MonoBehaviour
             if(Mathf.Abs(body.velocity.y)<0.001f && !crouch){
                 body.AddForce(new Vector2(0,jumpForce), ForceMode2D.Impulse);
             }
-            
-            
-        }
-        //if(Mathf.Abs(body.velocity.x)>0.001f || Mathf.Abs(body.velocity.y)>0.001f||Mathf.Abs(body.velocity.x)<-0.001f || Mathf.Abs(body.velocity.y)<-0.001f){
-        if(Mathf.Abs(body.velocity.y)!=0f){
-            animator.SetBool("Is_Idle",false);
-            Animate();
         }
     }
     void Animate(){
         animator.SetFloat("Horizontal",body.velocity.x);
         animator.SetFloat("Vertical",body.velocity.y);
     }
-    public void attack(){
-
+    public void Strike(){
+       
     }
     public void Attach(Rigidbody2D ropeSegment){
         ropeSegment.gameObject.GetComponent<Rope_SEG>().isPlayerAttached = true;
@@ -145,7 +155,7 @@ public class Player : MonoBehaviour
         Debug.Log("Level Loaded");
         Debug.Log(scene.name);
         Debug.Log(mode);
-        transform.position = GameObject.FindWithTag("Start").transform.position;
+        //transform.position = GameObject.FindWithTag("Start").transform.position;
         
     }
 }
